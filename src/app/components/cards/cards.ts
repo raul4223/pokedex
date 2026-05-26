@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit } from '@angular/core';
+import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -25,7 +25,7 @@ export interface PokemonDetailInfo {
   templateUrl: './cards.html',
   styleUrl: './cards.css',
 })
-export class Cards {
+export class Cards implements OnInit, OnDestroy {
 
   // Dados mockados de inicialização (segurança para renderização imediata)
   pokemons: PokemonListItem[] = [
@@ -35,6 +35,15 @@ export class Cards {
   ];
 
   searchTerm: string = '';
+  
+  // Easter Eggs Configs
+  konamiCode: string[] = [
+    'arrowup', 'arrowup', 'arrowdown', 'arrowdown',
+    'arrowleft', 'arrowright', 'arrowleft', 'arrowright',
+    'b', 'a'
+  ];
+  konamiIndex: number = 0;
+  isRetroMode: boolean = false;
   flippedPokemonIds: { [id: string]: boolean } = {};
   pokemonDetails: { [id: string]: PokemonDetailInfo } = {};
 
@@ -68,6 +77,39 @@ export class Cards {
     this.carregarPokemons();
   }
 
+  ngOnDestroy(): void {
+    document.body.classList.remove('retro-dmg-active');
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  handleKeyboardEvent(event: KeyboardEvent): void {
+    const key = event.key.toLowerCase();
+    
+    // Verificação da sequência do Código Konami
+    if (key === this.konamiCode[this.konamiIndex]) {
+      this.konamiIndex++;
+      if (this.konamiIndex === this.konamiCode.length) {
+        this.toggleRetroMode();
+        this.konamiIndex = 0;
+      }
+    } else {
+      this.konamiIndex = key === 'arrowup' ? 1 : 0;
+    }
+  }
+
+  toggleRetroMode(): void {
+    this.isRetroMode = !this.isRetroMode;
+    if (this.isRetroMode) {
+      document.body.classList.add('retro-dmg-active');
+      // Grito do Pikachu de level up retrô!
+      const audio = new Audio('https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/25.ogg');
+      audio.volume = 0.25;
+      audio.play().catch(() => {});
+    } else {
+      document.body.classList.remove('retro-dmg-active');
+    }
+  }
+
   carregarPokemons(): void {
     this.pokeApi.getAllPokemons().subscribe({
       next: (res) => {
@@ -95,6 +137,10 @@ export class Cards {
   getPokemonImage(url: string | number, back: boolean = false): string {
     const idStr = this.getPokemonId(url);
     const id = parseInt(idStr);
+    if (id === 0) {
+      // Retorna uma Pokébola bugada estilizada em pixel art como SVG inline em Base64
+      return 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 20" width="160" height="200" style="image-rendering:pixelated;shape-rendering:crispEdges;"><g fill="%23000000"><rect x="0" y="0" width="4" height="20"/><rect x="4" y="0" width="4" height="12"/><rect x="8" y="0" width="4" height="4"/><rect x="12" y="4" width="4" height="12"/><rect x="8" y="12" width="4" height="8"/><rect x="4" y="16" width="4" height="4"/></g><g fill="%23555555"><rect x="4" y="12" width="4" height="4"/><rect x="8" y="4" width="4" height="8"/></g><g fill="%23aaaaaa"><rect x="8" y="8" width="4" height="4"/><rect x="12" y="0" width="4" height="4"/><rect x="12" y="16" width="4" height="4"/></g></svg>';
+    }
     if (id <= 649) {
       return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${back ? 'back/' : ''}${id}.gif`;
     }
@@ -257,7 +303,7 @@ export class Cards {
     }
   }
 
-  get filteredPokemons(): PokemonListItem[] {
+  getFilteredPokemonsList(): PokemonListItem[] {
     let list = this.pokemons;
     
     // 1. Filtrar por Tipo (Elemento) se selecionado
@@ -274,6 +320,9 @@ export class Cards {
     // 3. Filtrar por Nome ou ID se digitado
     if (this.searchTerm.trim()) {
       const term = this.searchTerm.trim().toLowerCase();
+      if (term === 'missingno' || term === '0') {
+        return [{ name: 'MissingNo.', url: 'https://pokeapi.co/api/v2/pokemon/0/' }];
+      }
       list = list.filter(pokemon => {
         const id = this.getPokemonId(pokemon.url);
         return pokemon.name.toLowerCase().includes(term) || id === term;
@@ -281,6 +330,10 @@ export class Cards {
     }
     
     return list;
+  }
+
+  get filteredPokemons(): PokemonListItem[] {
+    return this.getFilteredPokemonsList();
   }
 
   onTypeChange(): void {
@@ -316,6 +369,22 @@ export class Cards {
   carregarDetalhes(pokemonId: string): void {
     // Se já estiver carregado ou carregando, não faz nada
     if (this.pokemonDetails[pokemonId]) {
+      return;
+    }
+
+    if (pokemonId === '0') {
+      this.pokemonDetails['0'] = {
+        id: 0,
+        name: 'MissingNo.',
+        height: 10,
+        weight: 3507,
+        types: ['???', 'normal'],
+        hp: 33,
+        attack: 136,
+        defense: 0,
+        loading: false,
+        japaneseName: 'けつばん (Ketsuban)'
+      };
       return;
     }
 
@@ -404,7 +473,8 @@ export class Cards {
       dragon: '#7038F8',
       dark: '#705848',
       steel: '#B8B8D0',
-      fairy: '#EE99AC'
+      fairy: '#EE99AC',
+      '???': '#1E2022'
     };
     return colors[type.toLowerCase()] || '#A8A878';
   }
@@ -430,7 +500,8 @@ export class Cards {
       dark: `<rect x="6" y="1" width="6" height="2"/><rect x="4" y="3" width="4" height="2"/><rect x="2" y="5" width="4" height="4"/><rect x="4" y="9" width="4" height="2"/><rect x="6" y="11" width="6" height="2"/><rect x="9" y="13" width="4" height="2"/><rect x="10" y="5" width="2" height="4" fill="#A0A0A0"/>`,
       fairy: `<rect x="7" y="1" width="2" height="2"/><rect x="4" y="3" width="8" height="2"/><rect x="2" y="5" width="12" height="4"/><rect x="4" y="9" width="8" height="2"/><rect x="6" y="11" width="4" height="3"/><rect x="5" y="5" width="2" height="2" fill="#FFD0E0"/><rect x="9" y="5" width="2" height="2" fill="#FFD0E0"/>`,
       fighting: `<rect x="6" y="2" width="4" height="2"/><rect x="4" y="4" width="8" height="2"/><rect x="3" y="6" width="10" height="4"/><rect x="4" y="10" width="8" height="2"/><rect x="5" y="12" width="6" height="2"/><rect x="6" y="6" width="4" height="2" fill="#C03028"/>`,
-      flying: `<rect x="2" y="3" width="4" height="2"/><rect x="4" y="5" width="6" height="2"/><rect x="6" y="7" width="8" height="2"/><rect x="4" y="9" width="8" height="2"/><rect x="2" y="11" width="10" height="2"/><rect x="5" y="13" width="6" height="2"/>`
+      flying: `<rect x="2" y="3" width="4" height="2"/><rect x="4" y="5" width="6" height="2"/><rect x="6" y="7" width="8" height="2"/><rect x="4" y="9" width="8" height="2"/><rect x="2" y="11" width="10" height="2"/><rect x="5" y="13" width="6" height="2"/>`,
+      '???': `<rect x="2" y="2" width="12" height="12"/><rect x="4" y="4" width="8" height="8" fill="#FFF"/><rect x="6" y="6" width="4" height="4" fill="#000"/>`
     };
 
     const innerSvg = svgMap[t] || `<rect x="4" y="4" width="8" height="8"/><rect x="7" y="7" width="2" height="2" fill="#FFF"/>`;
@@ -492,6 +563,16 @@ export class Cards {
     this.storyText = '';
     this.storyTextJa = '';
     this.storyEvolutionChain = [];
+
+    if (pokemonId === '0') {
+      this.activeStoryPokemonName = 'MissingNo.';
+      this.activeStoryPokemonType = '???';
+      this.storyText = 'A GLITCH POKÉMON OCCURRING IN RED AND BLUE. ITS APPEARANCE INDUCES A SENSE OF STRANGENESS AND DISTORTS LOGS.';
+      this.storyTextJa = 'しょうがない バグポケモン。でんどういり すると セーブデータが こわれる ことがある。';
+      this.storyEvolutionChain = [{ name: 'MissingNo.', id: '0' }];
+      this.storyLoading = false;
+      return;
+    }
 
     this.pokeApi.buscarPokemon(pokemonId).subscribe({
       next: (pokeData) => {

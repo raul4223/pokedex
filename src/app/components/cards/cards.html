@@ -1,3 +1,10 @@
+@if (isRetroMode) {
+  <div class="retro-dmg-banner">
+    <span class="retro-banner-text">MÔDO RETRO GAME BOY ATIVADO!</span>
+    <button class="retro-exit-btn" (click)="toggleRetroMode()">VOLTAR AO PRESENTE 🚀</button>
+  </div>
+}
+
 <div class="search-container">
   <!-- Caixa de Busca -->
   <div class="search-box">
@@ -71,6 +78,7 @@
     <div 
       class="card-wrapper" 
       [class.flipped]="flippedPokemonIds[getPokemonId(pokemon.url)]"
+      [class.missingno]="getPokemonId(pokemon.url) === '0'"
       (click)="toggleFlip(getPokemonId(pokemon.url))"
     >
       <div class="card-inner">
