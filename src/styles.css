@@ -1,1 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
 /* You can add global styles to this file, and also import other style files */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #1a1a2e;
+  overflow-x: hidden;
+}
+
+/* Custom Pixelated Scrollbar */
+::-webkit-scrollbar {
+  width: 16px;
+}
+::-webkit-scrollbar-track {
+  background: #1a1a2e;
+  border-left: 4px solid #000;
+}
+::-webkit-scrollbar-thumb {
+  background: #ff0055; /* Cor vermelha retrô de menu de RPG */
+  border: 4px solid #000;
+  border-radius: 0;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ff3377;
+}

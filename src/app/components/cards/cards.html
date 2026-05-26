@@ -1,0 +1,258 @@
+<div class="search-container">
+  <!-- Caixa de Busca -->
+  <div class="search-box">
+    <span class="search-icon">🔍</span>
+    <input 
+      type="text" 
+      [(ngModel)]="searchTerm" 
+      placeholder="BUSCAR POKEMON (NOME OU ID)..." 
+      class="search-input"
+    />
+    @if (searchTerm) {
+      <button class="clear-btn" (click)="searchTerm = ''">X</button>
+    }
+  </div>
+
+  <!-- Caixa de Filtros Retro -->
+  <div class="filters-box">
+    <!-- Filtro de Elemento/Tipo -->
+    <div class="filter-group custom-select-wrapper" (click)="$event.stopPropagation()">
+      <span class="filter-label">TIPO</span>
+      <div class="custom-select-trigger" (click)="toggleTypeDropdown($event)">
+        <span>{{ selectedType ? selectedType.toUpperCase() : 'TODOS' }}</span>
+        <span class="arrow-pixel">▼</span>
+      </div>
+      @if (isTypeDropdownOpen) {
+        <div class="custom-options-container">
+          <div class="custom-option" [class.selected]="selectedType === ''" (click)="selectType('')">TODOS</div>
+          @for (type of pokemonTypes; track type) {
+            <div class="custom-option" [class.selected]="selectedType === type" (click)="selectType(type)">
+              {{ type.toUpperCase() }}
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Filtro de Geração -->
+    <div class="filter-group custom-select-wrapper" (click)="$event.stopPropagation()">
+      <span class="filter-label">GERAÇÃO</span>
+      <div class="custom-select-trigger" (click)="toggleGenDropdown($event)">
+        <span>{{ getGenerationLabel(selectedGeneration) }}</span>
+        <span class="arrow-pixel">▼</span>
+      </div>
+      @if (isGenDropdownOpen) {
+        <div class="custom-options-container">
+          <div class="custom-option" [class.selected]="selectedGeneration === ''" (click)="selectGeneration('')">TODAS</div>
+          <div class="custom-option" [class.selected]="selectedGeneration === '1'" (click)="selectGeneration('1')">GERAÇÃO I</div>
+          <div class="custom-option" [class.selected]="selectedGeneration === '2'" (click)="selectGeneration('2')">GERAÇÃO II</div>
+          <div class="custom-option" [class.selected]="selectedGeneration === '3'" (click)="selectGeneration('3')">GERAÇÃO III</div>
+          <div class="custom-option" [class.selected]="selectedGeneration === '4'" (click)="selectGeneration('4')">GERAÇÃO IV</div>
+          <div class="custom-option" [class.selected]="selectedGeneration === '5'" (click)="selectGeneration('5')">GERAÇÃO V</div>
+          <div class="custom-option" [class.selected]="selectedGeneration === '6'" (click)="selectGeneration('6')">GERAÇÃO VI</div>
+          <div class="custom-option" [class.selected]="selectedGeneration === '7'" (click)="selectGeneration('7')">GERAÇÃO VII</div>
+          <div class="custom-option" [class.selected]="selectedGeneration === '8'" (click)="selectGeneration('8')">GERAÇÃO VIII</div>
+          <div class="custom-option" [class.selected]="selectedGeneration === '9'" (click)="selectGeneration('9')">GERAÇÃO IX</div>
+        </div>
+      }
+    </div>
+  </div>
+</div>
+
+@if (loadingType) {
+  <div class="type-loader-overlay">
+    <div class="pixel-spinner"></div>
+    <span class="type-loader-text">CARREGANDO ELEMENTOS...</span>
+  </div>
+}
+
+<div class="cards-container">
+  @for (pokemon of filteredPokemons; track pokemon.name) {
+    <div 
+      class="card-wrapper" 
+      [class.flipped]="flippedPokemonIds[getPokemonId(pokemon.url)]"
+      (click)="toggleFlip(getPokemonId(pokemon.url))"
+    >
+      <div class="card-inner">
+        <!-- FRENTE DO CARD -->
+        <div class="card-front">
+          <div class="card-header">
+            <span class="pokemon-id">#{{ getPokemonId(pokemon.url).padStart(3, '0') }}</span>
+          </div>
+          <div class="pokemon-image-wrap">
+            <img 
+              [src]="getPokemonImage(pokemon.url)" 
+              [alt]="pokemon.name"
+              class="pokemon-image"
+            />
+          </div>
+
+          <!-- Badge de Geração Pixel Art -->
+          <div class="generation-badge-container">
+            <div [innerHTML]="getGenerationSvg(pokemon.url)"></div>
+          </div>
+
+          <div class="card-footer">
+            <h3 class="pokemon-name">{{ pokemon.name }}</h3>
+          </div>
+        </div>
+
+        <!-- VERSO DO CARD -->
+        <div 
+          class="card-back" 
+          [style.border-color]="pokemonDetails[getPokemonId(pokemon.url)] ? getTypeColor(pokemonDetails[getPokemonId(pokemon.url)].types[0]) : '#000'"
+        >
+          @if (pokemonDetails[getPokemonId(pokemon.url)]?.loading) {
+            <div class="retro-loading">
+              <div class="pixel-spinner"></div>
+              <p class="loading-text">CARREGANDO...</p>
+            </div>
+          } @else if (pokemonDetails[getPokemonId(pokemon.url)]?.error) {
+            <div class="retro-error">
+              <p class="error-text">ERRO DE CONEXAO</p>
+            </div>
+          } @else if (pokemonDetails[getPokemonId(pokemon.url)]) {
+            <div class="card-back-header">
+              <div 
+                class="type-svg-container" 
+                [title]="pokemonDetails[getPokemonId(pokemon.url)].types[0]" 
+                [innerHTML]="getTypeSvg(pokemonDetails[getPokemonId(pokemon.url)].types[0])"
+              ></div>
+              <h3 class="pokemon-name-back">{{ pokemonDetails[getPokemonId(pokemon.url)].name }}</h3>
+              <button class="sound-btn" (click)="tocarSom(getPokemonId(pokemon.url), $event)" title="Ouvir Grito">🔊</button>
+              <span class="pokemon-id-back">#{{ getPokemonId(pokemon.url).padStart(3, '0') }}</span>
+            </div>
+
+            <div class="pokemon-image-wrap-back">
+              <img 
+                [src]="pokemonDetails[getPokemonId(pokemon.url)].backImageFallback || getPokemonImage(pokemon.url, true)" 
+                (error)="handleBackImageError(getPokemonId(pokemon.url))"
+                [alt]="pokemonDetails[getPokemonId(pokemon.url)].name"
+                class="pokemon-image"
+              />
+            </div>
+
+            <!-- Botão de voz da Pokedex Japonesa -->
+            <button class="pokedex-voice-btn" (click)="falarNomeJapones(pokemonDetails[getPokemonId(pokemon.url)].japaneseName || pokemonDetails[getPokemonId(pokemon.url)].name, $event)">
+              FALAR JAPONÊS {{ pokemonDetails[getPokemonId(pokemon.url)].japaneseName ? '(' + pokemonDetails[getPokemonId(pokemon.url)].japaneseName + ')' : '' }}
+            </button>
+
+            <!-- Barras de Atributos -->
+            <div class="stats-container">
+              <div class="pixel-bar-container">
+                <span class="pixel-bar-label">HP</span>
+                <div class="pixel-bar-wrapper">
+                  <div class="pixel-bar-fill hp-bar" [style.width.%]="(pokemonDetails[getPokemonId(pokemon.url)].hp / 200) * 100"></div>
+                </div>
+                <span class="pixel-bar-value">{{ pokemonDetails[getPokemonId(pokemon.url)].hp }}</span>
+              </div>
+
+              <div class="pixel-bar-container">
+                <span class="pixel-bar-label">ATK</span>
+                <div class="pixel-bar-wrapper">
+                  <div class="pixel-bar-fill atk-bar" [style.width.%]="(pokemonDetails[getPokemonId(pokemon.url)].attack / 200) * 100"></div>
+                </div>
+                <span class="pixel-bar-value">{{ pokemonDetails[getPokemonId(pokemon.url)].attack }}</span>
+              </div>
+
+              <div class="pixel-bar-container">
+                <span class="pixel-bar-label">DEF</span>
+                <div class="pixel-bar-wrapper">
+                  <div class="pixel-bar-fill def-bar" [style.width.%]="(pokemonDetails[getPokemonId(pokemon.url)].defense / 200) * 100"></div>
+                </div>
+                <span class="pixel-bar-value">{{ pokemonDetails[getPokemonId(pokemon.url)].defense }}</span>
+              </div>
+            </div>
+
+            <!-- Botão de Detalhe do Pokémon -->
+            <button class="pokemon-story-btn" (click)="openStoryModal(getPokemonId(pokemon.url), $event)">
+              DETALHE DO POKÉMON
+            </button>
+
+            <!-- Peso e Altura -->
+            <div class="metrics-container">
+              <div class="metric-box">
+                <span class="metric-label">PESO</span>
+                <span class="metric-value">{{ pokemonDetails[getPokemonId(pokemon.url)].weight / 10 }}kg</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-label">ALT</span>
+                <span class="metric-value">{{ pokemonDetails[getPokemonId(pokemon.url)].height / 10 }}m</span>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  } @empty {
+    <div class="no-results">
+      <p class="no-results-text">NENHUM POKEMON ENCONTRADO!</p>
+    </div>
+  }
+</div>
+
+@if (selectedStoryPokemonId) {
+  <div class="story-modal-overlay" (click)="closeStoryModal()">
+    <div class="story-modal-content" (click)="$event.stopPropagation()">
+      <!-- Close button -->
+      <button class="story-close-btn" (click)="closeStoryModal()">X</button>
+      
+      @if (storyLoading) {
+        <div class="story-modal-loading">
+          <div class="pixel-spinner"></div>
+          <span class="loading-text">CONECTANDO A POKEDEX...</span>
+        </div>
+      } @else {
+        <!-- Environment and evolutions at the top -->
+        <div class="story-env-container" [ngClass]="getEnvironmentClass(activeStoryPokemonType)">
+          <!-- Scanline overlay inside environment screen -->
+          <div class="env-scanlines"></div>
+          
+          <div class="story-env-title">
+            HABITAT: {{ activeStoryPokemonType.toUpperCase() }}
+          </div>
+          
+          <div class="env-evolutions-track">
+            @for (stage of storyEvolutionChain; track stage.id; let idx = $index) {
+              @if (idx > 0) {
+                <div class="pixel-arrow-divider">▶</div>
+              }
+              <div class="evolution-stage-box" [class.active]="stage.id === selectedStoryPokemonId">
+                <div class="evo-sprite-wrap">
+                  <img [src]="getPokemonImage(stage.id)" [alt]="stage.name" class="evo-sprite" />
+                </div>
+                <span class="evo-name">{{ stage.name }}</span>
+                <span class="evo-badge">
+                  @if (storyEvolutionChain.length === 1) {
+                    FASE ÚNICA
+                  } @else if (storyEvolutionChain.length === 2) {
+                    {{ idx === 0 ? 'FASE PEQ' : 'FASE GRD' }}
+                  } @else {
+                    {{ idx === 0 ? 'FASE PEQ' : idx === 1 ? 'FASE MÉD' : 'FASE GRD' }}
+                  }
+                </span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- History/Lore at the bottom -->
+        <div class="story-lore-container">
+          <div class="lore-screen">
+            <div class="lore-screen-header">
+              <span class="pokedex-mode">POKÉDEX DATA #{{ selectedStoryPokemonId.padStart(3, '0') }} {{ activeStoryPokemonName.toUpperCase() }}</span>
+              <span class="pokedex-dot blinking"></span>
+            </div>
+            <div class="lore-text">
+              <p class="lore-paragraph en-version">{{ storyText || 'NO DATA RECORDED IN POKEDEX.' }}</p>
+              @if (storyTextJa) {
+                <div class="lore-separator"></div>
+                <p class="lore-paragraph ja-version">{{ storyTextJa }}</p>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}
