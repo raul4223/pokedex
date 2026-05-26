@@ -8,7 +8,7 @@
 <div class="search-container">
   <!-- Caixa de Busca -->
   <div class="search-box">
-    <span class="search-icon">🔍</span>
+    <span class="search-icon" (click)="onSearchIconClick()" style="cursor: pointer;" title="Dica: Clique 3 vezes aqui para ativar o modo retrô!">🔍</span>
     <input 
       type="text" 
       [(ngModel)]="searchTerm" 

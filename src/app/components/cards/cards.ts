@@ -81,19 +81,36 @@ export class Cards implements OnInit, OnDestroy {
     document.body.classList.remove('retro-dmg-active');
   }
 
+  searchIconClicks: number = 0;
+
+  onSearchIconClick(): void {
+    this.searchIconClicks++;
+    if (this.searchIconClicks >= 3) {
+      this.toggleRetroMode();
+      this.searchIconClicks = 0;
+    }
+  }
+
   @HostListener('document:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent): void {
     const key = event.key.toLowerCase();
     
+    // Normalização das setas para compatibilidade total entre navegadores e sistemas
+    let normalizedKey = key;
+    if (key === 'up') normalizedKey = 'arrowup';
+    if (key === 'down') normalizedKey = 'arrowdown';
+    if (key === 'left') normalizedKey = 'arrowleft';
+    if (key === 'right') normalizedKey = 'arrowright';
+    
     // Verificação da sequência do Código Konami
-    if (key === this.konamiCode[this.konamiIndex]) {
+    if (normalizedKey === this.konamiCode[this.konamiIndex]) {
       this.konamiIndex++;
       if (this.konamiIndex === this.konamiCode.length) {
         this.toggleRetroMode();
         this.konamiIndex = 0;
       }
     } else {
-      this.konamiIndex = key === 'arrowup' ? 1 : 0;
+      this.konamiIndex = normalizedKey === 'arrowup' ? 1 : 0;
     }
   }
 
