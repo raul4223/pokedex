@@ -16,9 +16,9 @@ Uma aplicação de Pokédex simples e moderna construída com [Angular](https://
 
 <img src="eggs.svg" width="120" align="right" alt="Easter Eggs Pixel Art" style="margin-left: 20px;">
 
-Esta Pokédex possui segredos retrô escondidos! Divirta-se encontrando:
-* **MissingNo. Glitch:** Busque por `MissingNo` ou `0` na barra de pesquisa para ver a interface e os dados do Pokémon glitcharem no estilo clássico.
-* **Modo Retro Game Boy (DMG):** Insira o Código Konami (`↑ ↑ ↓ ↓ ← → ← → B A`) no teclado ou clique 3 vezes rápidas no ícone de busca `🔍` para transformar a Pokédex inteira (incluindo GIFs animados dos Pokémon e barras de rolagem) no visual clássico verde de 8-bits!
+Esta Pokédex possui segredos retrô e glitches clássicos escondidos no código! 
+
+Será que você consegue descobrir como ativá-los? Explore a barra de pesquisa e experimente comandos nostálgicos para desvendar todos os mistérios ocultos!
 
 <br clear="right"/>
 
