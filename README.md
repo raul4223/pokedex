@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="pokeball.svg" width="160" height="160" alt="Pokébola Pixel Art">
+  <img src="pokeball.svg" width="320" height="120" alt="Pokémon Pokéball Pixel Art">
 </p>
 
 # Pokédex
